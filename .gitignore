@@ -1,0 +1,12 @@
+# 本地测试产物
+daily_report.md
+__pycache__/
+*.pyc
+.env
+
+# 探测/调试脚本（仅开发期使用，不进部署仓库）
+probe_*.py
+
+# Python
+venv/
+.venv/

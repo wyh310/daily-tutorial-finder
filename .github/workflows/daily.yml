@@ -1,0 +1,35 @@
+name: daily-tutorial-finder
+
+on:
+  schedule:
+    # 北京时间每天 07:00 触发（UTC 23:00 前一天）
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Run aggregator
+        env:
+          # —— 非敏感配置：放 GitHub Variables（Settings → Variables，明文可见）——
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_PORT: ${{ vars.DB_PORT }}
+          DB_USER: ${{ vars.DB_USER }}
+          DB_NAME: ${{ vars.DB_NAME }}
+          NOTIFY: ${{ vars.NOTIFY }}
+          EMAIL_TO: ${{ vars.EMAIL_TO }}
+          EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+          SMTP_HOST: ${{ vars.SMTP_HOST }}
+          SMTP_PORT: ${{ vars.SMTP_PORT }}
+          # —— 敏感凭证：放 GitHub Secrets（加密，不可见）——
+          DB_PASS: ${{ secrets.DB_PASS }}
+          SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+        run: python aggregator.py
