@@ -500,10 +500,31 @@ def fetch_bilibili():
                     senddate = v.get('senddate') or v.get('pubdate')
                     items.append({'title': title, 'url': f'https://www.bilibili.com/video/{bvid}',
                                   'desc': '', 'src': 'B站', 'hot': str(play),
-                                  'cat': classify(title), 'date': ts_to_dt(senddate)})
+                                  'cat': classify(title), 'date': ts_to_dt(senddate),
+                                  'duration': parse_duration(v.get('duration'))})
     except Exception as e:
         print('[B站] 失败:', e)
     return items
+
+
+def parse_duration(s):
+    """把 B站时长字符串（"2:11" / "1:02:11"）解析为整数秒；无法解析返回 None"""
+    if not isinstance(s, str):
+        return None
+    s = s.strip()
+    if not s or ':' not in s:
+        return None
+    try:
+        parts = [int(p) for p in s.split(':')]
+    except Exception:
+        return None
+    if len(parts) == 3:
+        return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    if len(parts) == 2:
+        return parts[0] * 60 + parts[1]
+    if len(parts) == 1:
+        return parts[0]
+    return None
 
 
 def hotnum(i):
@@ -627,6 +648,7 @@ def main():
     # 1) 时效窗口过滤（无时间的源一律保留，最后按热度兜底）
     filtered = []
     skipped_old = 0
+    skipped_short = 0
     for i in all_items:
         if not i['cat']:
             continue
@@ -635,7 +657,13 @@ def main():
         if d is not None and (NOW - d).days > mx:
             skipped_old += 1
             continue
+        dur = i.get('duration')
+        if dur is not None and dur < 180:   # 不抓取视频时长低于 3 分钟的教程
+            skipped_short += 1
+            continue
         filtered.append(i)
+
+    print(f'[过滤] 时效窗口跳过 {skipped_old} 条，视频时长<3分钟跳过 {skipped_short} 条，剩余 {len(filtered)} 条')
 
     # 2) 去重（仅本批次内按 URL 去重）
     seen, dedup = set(), []
@@ -691,7 +719,8 @@ def main():
 
     today = NOW.strftime('%Y-%m-%d')
     md = f"# 📅 每日选题简报 {today}\n\n"
-    md += (f"> 共抓取 {len(all_items)} 条，命中 {len(dedup)} 条（时效窗口过滤掉 {skipped_old} 条旧内容）；"
+    md += (f"> 共抓取 {len(all_items)} 条，命中 {len(dedup)} 条（时效窗口过滤掉 {skipped_old} 条旧内容，"
+           f"视频时长<3分钟过滤掉 {skipped_short} 条）；"
            f"历史已见 {already} 条，本次新发现 {len(report_items)} 条；"
            f"服务器/建站 {len(A)} · 工具/AI {len(B)}\n\n")
 
