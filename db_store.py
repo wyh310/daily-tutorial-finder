@@ -62,6 +62,12 @@ def init_db():
                 "ALTER TABLE tutorial_items ADD COLUMN priority INT NOT NULL DEFAULT 0")
         except Exception:
             pass
+        # 兼容旧表：补 duration 字段（视频时长，单位秒；文章类源为 NULL）
+        try:
+            cur.execute(
+                "ALTER TABLE tutorial_items ADD COLUMN duration INT DEFAULT NULL")
+        except Exception:
+            pass
         conn.commit()
         print('[DB] 表 tutorial_items 已就绪')
     finally:
@@ -101,13 +107,14 @@ def save_items(items):
             hot = str(it.get('hot') or '')
             pub_date = it['date'].date() if it.get('date') else None
             pri = int(it.get('priority') or 0)
+            dur = it.get('duration')
             try:
                 cur.execute(
                     "INSERT IGNORE INTO tutorial_items "
-                    "(title, url, url_hash, src, category, hot, pub_date, description, priority, fetched_at) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
+                    "(title, url, url_hash, src, category, hot, pub_date, description, priority, duration, fetched_at) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())",
                     (title, url, url_hash, it.get('src'), it.get('cat'),
-                     hot, pub_date, desc, pri),
+                     hot, pub_date, desc, pri, dur),
                 )
                 if cur.rowcount == 1:
                     inserted += 1
