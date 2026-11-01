@@ -1,6 +1,7 @@
 name: backfill-duration
 
-# 一次性回填 B站视频时长并清理低于2分钟的选题。手动触发，不定时运行。
+# 一次性回填 B站视频时长并清理低于3分钟的选题。手动触发，不定时运行。
+# 想只删除不回填时，可改用 prune-short-videos 工作流（更快）。
 on:
   workflow_dispatch:
 

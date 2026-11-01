@@ -1,0 +1,27 @@
+name: prune-short-videos
+
+# 仅删除库内"已确认时长低于3分钟"的 B站选题（跳过耗时的回查时长步骤，快速清理）。
+# 手动触发：仓库 Actions 页 -> prune-short-videos -> Run workflow
+on:
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Prune short videos (delete only)
+        env:
+          PYTHONUNBUFFERED: '1'
+          BACKFILL: '0'
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_PORT: ${{ vars.DB_PORT }}
+          DB_USER: ${{ vars.DB_USER }}
+          DB_NAME: ${{ vars.DB_NAME }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+        run: python cleanup_short.py
